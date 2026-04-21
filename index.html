@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tailwind CRM Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css"
+    />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+      body {
+        background: #f1f5f9;
+      }
+
+      .dataTables_wrapper .dt-buttons .dt-button {
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #0f172a;
+      }
+
+      .editable-cell {
+        min-width: 120px;
+        display: inline-block;
+      }
+
+      .quick-input {
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid #94a3b8;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
+      <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <h1 class="text-2xl font-bold text-slate-900">CRM Workspace</h1>
+        <p class="text-sm text-slate-500 mt-2">
+          Asana / ClickUp inspired layout with fast inline updates, detailed records,
+          and full data management.
+        </p>
+      </header>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-semibold text-slate-900">Leads DataTable</h2>
+            <p class="text-sm text-slate-500">AJAX loaded rows + inline quick edit + export.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              @click="applyBulkStatus('Qualified')"
+              class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
+            >
+              Bulk: Mark Qualified
+            </button>
+            <button
+              @click="applyBulkStatus('Follow Up')"
+              class="px-3 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600"
+            >
+              Bulk: Follow Up
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table id="crmTable" class="display stripe hover w-full text-sm">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll" /></th>
+                <th>Lead Name</th>
+                <th>Company</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Stage</th>
+                <th>Owner</th>
+                <th>Priority</th>
+                <th>City</th>
+                <th>Deal Value</th>
+                <th>Updated</th>
+              </tr>
+              <tr class="filters">
+                <th></th>
+                <th><input class="quick-input" placeholder="Filter name" /></th>
+                <th><input class="quick-input" placeholder="Filter company" /></th>
+                <th><input class="quick-input" placeholder="Filter email" /></th>
+                <th><input class="quick-input" placeholder="Filter phone" /></th>
+                <th><input class="quick-input" placeholder="Filter stage" /></th>
+                <th><input class="quick-input" placeholder="Filter owner" /></th>
+                <th><input class="quick-input" placeholder="Filter priority" /></th>
+                <th><input class="quick-input" placeholder="Filter city" /></th>
+                <th><input class="quick-input" placeholder="Filter value" /></th>
+                <th><input class="quick-input" placeholder="Filter date" /></th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Lead Intake Form (15+ Fields)</h2>
+        <form class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" @submit.prevent="saveForm">
+          <div>
+            <label class="text-sm font-medium">Lead Name</label>
+            <input v-model="form.leadName" class="w-full mt-1 rounded-lg border-slate-300" type="text" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Company Name</label>
+            <input v-model="form.company" class="w-full mt-1 rounded-lg border-slate-300" type="text" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Email</label>
+            <input v-model="form.email" class="w-full mt-1 rounded-lg border-slate-300" type="text" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Phone</label>
+            <input v-model="form.phone" class="w-full mt-1 rounded-lg border-slate-300" type="tel" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Deal Value ($)</label>
+            <input v-model="form.dealValue" class="w-full mt-1 rounded-lg border-slate-300" type="number" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Pipeline Stage</label>
+            <select v-model="form.stage" class="w-full mt-1 rounded-lg border-slate-300">
+              <option>New</option>
+              <option>Contacted</option>
+              <option>Qualified</option>
+              <option>Proposal</option>
+              <option>Won</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-medium">Owner</label>
+            <input v-model="form.owner" class="w-full mt-1 rounded-lg border-slate-300" type="text" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">City</label>
+            <input v-model="form.city" class="w-full mt-1 rounded-lg border-slate-300" type="text" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Country</label>
+            <input v-model="form.country" class="w-full mt-1 rounded-lg border-slate-300" type="text" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Latitude</label>
+            <input v-model="form.latitude" class="w-full mt-1 rounded-lg border-slate-300" type="number" step="any" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Longitude</label>
+            <input v-model="form.longitude" class="w-full mt-1 rounded-lg border-slate-300" type="number" step="any" />
+          </div>
+          <div>
+            <label class="text-sm font-medium">Lead Source</label>
+            <select v-model="form.source" class="w-full mt-1 rounded-lg border-slate-300">
+              <option>Website</option>
+              <option>Referral</option>
+              <option>LinkedIn</option>
+              <option>Email Campaign</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm font-medium">Company Size</label>
+            <select v-model="form.companySize" class="w-full mt-1 rounded-lg border-slate-300">
+              <option>1-10</option>
+              <option>11-50</option>
+              <option>51-200</option>
+              <option>200+</option>
+            </select>
+          </div>
+          <div>
+            <p class="text-sm font-medium">Decision Maker?</p>
+            <div class="mt-2 flex gap-4">
+              <label><input type="radio" value="Yes" v-model="form.decisionMaker" /> Yes</label>
+              <label><input type="radio" value="No" v-model="form.decisionMaker" /> No</label>
+            </div>
+          </div>
+          <div>
+            <p class="text-sm font-medium">Interested Modules</p>
+            <div class="mt-2 space-y-1 text-sm">
+              <label class="block"><input type="checkbox" value="Tasks" v-model="form.modules" /> Tasks</label>
+              <label class="block"><input type="checkbox" value="Automation" v-model="form.modules" /> Automation</label>
+              <label class="block"><input type="checkbox" value="Reports" v-model="form.modules" /> Reports</label>
+            </div>
+          </div>
+          <div class="md:col-span-2 lg:col-span-3">
+            <label class="text-sm font-medium">Notes</label>
+            <textarea v-model="form.notes" class="w-full mt-1 rounded-lg border-slate-300" rows="3"></textarea>
+          </div>
+          <div class="md:col-span-2 lg:col-span-3 flex justify-end">
+            <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700">
+              Save Lead
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Lead Detail View</h2>
+        <div class="flex gap-2 border-b border-slate-200 pb-3 mb-4 overflow-x-auto">
+          <button
+            v-for="tab in tabs"
+            :key="tab"
+            @click="activeTab = tab"
+            class="px-3 py-2 rounded-lg text-sm"
+            :class="activeTab === tab ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'"
+          >
+            {{ tab }}
+          </button>
+        </div>
+
+        <div v-if="activeTab === 'Overview'" class="grid md:grid-cols-2 gap-4">
+          <div class="border border-slate-200 rounded-xl p-4" v-for="field in overviewFields" :key="field.key">
+            <p class="text-xs text-slate-500">{{ field.label }}</p>
+            <input
+              v-model="detail[field.key]"
+              class="w-full mt-2 rounded-lg border-slate-300"
+              type="text"
+            />
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'Activity'" class="space-y-3">
+          <div class="border border-slate-200 rounded-xl p-4" v-for="(activity, i) in detail.activities" :key="i">
+            <input v-model="detail.activities[i]" class="w-full rounded-lg border-slate-300" type="text" />
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'Tasks'" class="space-y-3">
+          <div class="border border-slate-200 rounded-xl p-4" v-for="(task, i) in detail.tasks" :key="i">
+            <div class="flex items-center gap-2">
+              <input v-model="detail.tasks[i].name" class="flex-1 rounded-lg border-slate-300" type="text" />
+              <select v-model="detail.tasks[i].status" class="rounded-lg border-slate-300">
+                <option>Open</option>
+                <option>In Progress</option>
+                <option>Done</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-right">
+          <button @click="saveDetail" class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Quick Update</button>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            table: null,
+            selectedIds: [],
+            tabs: ['Overview', 'Activity', 'Tasks'],
+            activeTab: 'Overview',
+            form: {
+              leadName: '',
+              company: '',
+              email: '',
+              phone: '',
+              dealValue: 10000,
+              stage: 'New',
+              owner: 'Alex Harper',
+              city: '',
+              country: '',
+              latitude: '',
+              longitude: '',
+              source: 'Website',
+              companySize: '11-50',
+              decisionMaker: 'Yes',
+              modules: ['Tasks'],
+              notes: ''
+            },
+            detail: {
+              leadName: 'Nordic Pixel Studio',
+              company: 'Nordic Pixel',
+              stage: 'Qualified',
+              owner: 'Leah Wong',
+              priority: 'High',
+              expectedClose: '2026-05-10',
+              activities: ['Intro call completed', 'Demo scheduled for Friday'],
+              tasks: [
+                { name: 'Prepare tailored proposal', status: 'In Progress' },
+                { name: 'Confirm stakeholder attendees', status: 'Open' }
+              ]
+            },
+            overviewFields: [
+              { label: 'Lead Name', key: 'leadName' },
+              { label: 'Company', key: 'company' },
+              { label: 'Stage', key: 'stage' },
+              { label: 'Owner', key: 'owner' },
+              { label: 'Priority', key: 'priority' },
+              { label: 'Expected Close', key: 'expectedClose' }
+            ]
+          };
+        },
+        mounted() {
+          this.setupTable();
+        },
+        methods: {
+          mockAjaxData(callback) {
+            const rows = Array.from({ length: 42 }, (_, i) => {
+              const id = i + 1;
+              return {
+                id,
+                leadName: `Lead ${id}`,
+                company: `Company ${id}`,
+                email: `lead${id}@crm.com`,
+                phone: `+1 (555) 100-${String(id).padStart(4, '0')}`,
+                stage: ['New', 'Contacted', 'Qualified', 'Follow Up'][id % 4],
+                owner: ['Ava', 'Liam', 'Noah', 'Emma'][id % 4],
+                priority: ['Low', 'Medium', 'High'][id % 3],
+                city: ['New York', 'Austin', 'Miami', 'Seattle'][id % 4],
+                dealValue: (id * 1500).toLocaleString(),
+                updated: `2026-04-${String((id % 20) + 1).padStart(2, '0')}`
+              };
+            });
+            setTimeout(() => callback({ data: rows }), 400);
+          },
+          setupTable() {
+            const vm = this;
+            this.table = $('#crmTable').DataTable({
+              ajax(data, callback) {
+                vm.mockAjaxData(callback);
+              },
+              deferRender: true,
+              pageLength: 10,
+              dom: 'Bfrtip',
+              buttons: [
+                { extend: 'colvis', text: 'Show/Hide Columns' },
+                { extend: 'csvHtml5', text: 'Export CSV', title: 'crm-leads' }
+              ],
+              columns: [
+                {
+                  data: 'id',
+                  render(data) {
+                    return `<input type="checkbox" class="row-select" value="${data}" />`;
+                  },
+                  orderable: false
+                },
+                { data: 'leadName', render: (d, t, r) => vm.inlineCell(d, r.id, 'leadName') },
+                { data: 'company', render: (d, t, r) => vm.inlineCell(d, r.id, 'company') },
+                { data: 'email', render: (d, t, r) => vm.inlineCell(d, r.id, 'email') },
+                { data: 'phone', render: (d, t, r) => vm.inlineCell(d, r.id, 'phone') },
+                { data: 'stage', render: (d, t, r) => vm.inlineCell(d, r.id, 'stage') },
+                { data: 'owner', render: (d, t, r) => vm.inlineCell(d, r.id, 'owner') },
+                { data: 'priority', render: (d, t, r) => vm.inlineCell(d, r.id, 'priority') },
+                { data: 'city', render: (d, t, r) => vm.inlineCell(d, r.id, 'city') },
+                { data: 'dealValue', render: (d, t, r) => vm.inlineCell(d, r.id, 'dealValue') },
+                { data: 'updated', render: (d, t, r) => vm.inlineCell(d, r.id, 'updated') }
+              ],
+              initComplete() {
+                const api = this.api();
+                api.columns().every(function (index) {
+                  if (index === 0) return;
+                  $('input', $('.filters th')[index]).on('keyup change', function () {
+                    api.column(index).search(this.value).draw();
+                  });
+                });
+              }
+            });
+
+            $('#crmTable').on('change', '.row-select', function () {
+              const id = Number(this.value);
+              if (this.checked) {
+                if (!vm.selectedIds.includes(id)) vm.selectedIds.push(id);
+              } else {
+                vm.selectedIds = vm.selectedIds.filter((item) => item !== id);
+              }
+            });
+
+            $('#selectAll').on('change', function () {
+              const checked = this.checked;
+              $('.row-select').prop('checked', checked).trigger('change');
+            });
+
+            $('#crmTable').on('blur', '.editable-cell', function () {
+              const field = this.dataset.field;
+              const id = this.dataset.id;
+              const value = this.innerText.trim();
+              console.log(`Quick updated row ${id} field ${field}: ${value}`);
+            });
+          },
+          inlineCell(value, id, field) {
+            return `<span contenteditable="true" class="editable-cell" data-id="${id}" data-field="${field}">${value}</span>`;
+          },
+          applyBulkStatus(status) {
+            if (!this.selectedIds.length) {
+              alert('Please select at least one row for bulk action.');
+              return;
+            }
+            alert(`Applied '${status}' to leads: ${this.selectedIds.join(', ')}`);
+          },
+          saveForm() {
+            alert('Lead form saved with quick intake fields.');
+          },
+          saveDetail() {
+            alert('Lead detail updated instantly.');
+          }
+        }
+      }).mount('#app');
+    </script>
+  </body>
+</html>
